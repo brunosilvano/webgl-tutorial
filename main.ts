@@ -16,19 +16,25 @@ function main(): void {
   // Vertex shader program
   const vsSource: string = `
     attribute vec4 aVertexPosition;
+    attribute vec4 aVertexColor;
 
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
+    varying lowp vec4 vColor;
+
     void main() {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+      vColor = aVertexColor;
     }
   `;
 
   // Fragment shader program
   const fsSource: string = `
+    varying lowp vec4 vColor;
+
     void main() {
-      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      gl_FragColor = vColor;
     }
   `;
 
@@ -42,7 +48,8 @@ function main(): void {
   const programInfo = {
     program: shaderProgram,
     attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor')
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
@@ -64,7 +71,7 @@ function main(): void {
 // Initialize the buffers we'll need. For this demo, we just
 // have one object -- a simple two-dimensional square.
 //
-function initBuffers(gl: WebGLRenderingContext): {position: WebGLBuffer} {
+function initBuffers(gl: WebGLRenderingContext): {position: WebGLBuffer, color: WebGLBuffer} {
   // Create a buffer for the square's positions.
   const positionBuffer: WebGLBuffer = gl.createBuffer()!;
 
@@ -85,8 +92,21 @@ function initBuffers(gl: WebGLRenderingContext): {position: WebGLBuffer} {
   // JavaScript array, then use it to fill the current buffer.
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
+  // Now set up the colors for the vertices
+  var colors = [
+    1.0,  1.0,  1.0,  1.0,    // white
+    1.0,  0.0,  0.0,  1.0,    // red
+    0.0,  1.0,  0.0,  1.0,    // green
+    0.0,  0.0,  1.0,  1.0,    // blue
+  ];
+
+  const colorBuffer = gl.createBuffer()!;
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
   return {
-    position: positionBuffer
+    position: positionBuffer,
+    color: colorBuffer,
   };
 }
 
@@ -147,6 +167,26 @@ function drawScene(gl: WebGLRenderingContext, programInfo: any, buffers: any) {
       stride,
       offset);
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+  }
+
+  // Tell WebGL how to pull out the colors from the color buffer
+  // into the vertexColor attribute.
+  {
+    const numComponents = 4;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.vertexColor,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset);
+    gl.enableVertexAttribArray(
+        programInfo.attribLocations.vertexColor);
   }
 
   // Tell WebGL to use our program when drawing
