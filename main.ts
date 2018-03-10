@@ -1,4 +1,5 @@
 declare var mat4: any;
+var squareRotation = 0.0;
 
 main()
 
@@ -61,8 +62,19 @@ function main(): void {
   // objects we'll be drawing.
   const buffers = initBuffers(gl);
 
-  // Draw the scene
-  drawScene(gl, programInfo, buffers);
+  var then = 0;
+
+  // Draw the scene repeatdly
+  function render(now) {
+    now *= 0.001;  // convert to seconds
+    const deltaTime = now - then;
+    then = now;
+
+    drawScene(gl, programInfo, buffers, deltaTime);
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
 }
 
 //
@@ -113,7 +125,7 @@ function initBuffers(gl: WebGLRenderingContext): {position: WebGLBuffer, color: 
 //
 // Draw the scene.
 //
-function drawScene(gl: WebGLRenderingContext, programInfo: any, buffers: any) {
+function drawScene(gl: WebGLRenderingContext, programInfo: any, buffers: any, deltaTime: number) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);    // Set clear color as black
   gl.clearDepth(1.0);                   // Clear everything
   gl.enable(gl.DEPTH_TEST);             // Enable depth testing
@@ -149,6 +161,11 @@ function drawScene(gl: WebGLRenderingContext, programInfo: any, buffers: any) {
   mat4.translate(modelViewMatrix,     // destination matrix
                  modelViewMatrix,     // matrix to translate
                  [-0.0, 0.0, -6.0]);  // amount to translate
+
+  mat4.rotate(modelViewMatrix,  // destination matrix
+              modelViewMatrix,  // matrix to rotate
+              squareRotation,   // amount to rotate in radians
+              [0, 0, 1]);       // axis to rotate around
 
   // Tell WebGL how to pull out the positions from the position
   // buffer into the vertexPosition attribute.
@@ -207,6 +224,9 @@ function drawScene(gl: WebGLRenderingContext, programInfo: any, buffers: any) {
     const vertexCount = 4;
     gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
   }
+
+  // Update the rotation for the next draw
+  squareRotation += deltaTime;
 }
 
 //

@@ -1,4 +1,5 @@
 "use strict";
+var squareRotation = 0.0;
 main();
 function main() {
     var canvas = document.getElementById('glCanvas');
@@ -22,7 +23,15 @@ function main() {
         }
     };
     var buffers = initBuffers(gl);
-    drawScene(gl, programInfo, buffers);
+    var then = 0;
+    function render(now) {
+        now *= 0.001;
+        var deltaTime = now - then;
+        then = now;
+        drawScene(gl, programInfo, buffers, deltaTime);
+        requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
 }
 function initBuffers(gl) {
     var positionBuffer = gl.createBuffer();
@@ -48,7 +57,7 @@ function initBuffers(gl) {
         color: colorBuffer,
     };
 }
-function drawScene(gl, programInfo, buffers) {
+function drawScene(gl, programInfo, buffers, deltaTime) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -62,6 +71,7 @@ function drawScene(gl, programInfo, buffers) {
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
     var modelViewMatrix = mat4.create();
     mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
     {
         var numComponents = 2;
         var type = gl.FLOAT;
@@ -90,6 +100,7 @@ function drawScene(gl, programInfo, buffers) {
         var vertexCount = 4;
         gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
     }
+    squareRotation += deltaTime;
 }
 function initShaderProgram(gl, vsSource, fsSource) {
     var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
